@@ -3,7 +3,10 @@
 #include <string.h>
 #include <errno.h>
 
+#include <exception>
+
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
+#include <gdk-pixbuf/gdk-pixbuf-simple-anim.h>
 #include <glib/gstdio.h>
 
 #include <VTFLib.h>
@@ -37,60 +40,140 @@ static gchar* vtf_extensions[] = {
 	NULL
 };
 
-static GdkPixbuf* vtf_image_load_memory(
-	const guchar *buffer,
-	guint         size,
-	GError      **error)
+static gboolean vtf_image_load_from_memory(
+	const guchar        *buffer,
+	guint                size,
+	GdkPixbuf          **pixbuf_ptr,
+	GdkPixbufAnimation **animation_ptr,
+	GError             **error)
 {
+	GdkPixbuf           *pixbuf    = NULL;
+	GdkPixbufSimpleAnim *animation = NULL;
+
 	try {
 		CVTFFile vtf;
-		if (vtf.Load(buffer, size)) {
-			const vlUInt width  = vtf.GetWidth();
-			const vlUInt height = vtf.GetHeight();
-			GdkPixbuf* pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+		if (!vtf.Load(buffer, size)) {
+			g_set_error(
+				error,
+				GDK_PIXBUF_ERROR,
+				GDK_PIXBUF_ERROR_CORRUPT_IMAGE,
+				"%s", LastError.Get());
+			return FALSE;
+		}
 
-	        if (pixbuf != NULL) {
-				const vlByte* frame = vtf.GetData(vtf.GetFrameCount() - 1, 0, 0, 0);
+		const vlUInt width  = vtf.GetWidth();
+		const vlUInt height = vtf.GetHeight();
+		const vlUInt frames = vtf.GetFrameCount();
+
+		if (animation_ptr && (frames != 1 || !pixbuf_ptr)) {
+			animation = gdk_pixbuf_simple_anim_new(width, height, 4.0);
+
+			if (animation == NULL) {
+				g_set_error(
+					error,
+					GDK_PIXBUF_ERROR,
+					GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY,
+					"Could not allocate GdkPixbufSimpleAnim object");
+				return FALSE;
+			}
+
+			gdk_pixbuf_simple_anim_set_loop(animation, TRUE);
+
+			for (vlUInt i = vtf.GetStartFrame(); i < frames; ++ i) {
+				pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+
+				if (pixbuf == NULL) {
+					g_object_unref(animation);
+					g_set_error(
+						error,
+						GDK_PIXBUF_ERROR,
+						GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY,
+						"Could not allocate GdkPixbuf object");
+					return FALSE;
+				}
+				
+				const vlByte* frame = vtf.GetData(i, 0, 0, 0);
 				guchar* pixels = gdk_pixbuf_get_pixels(pixbuf);
 
-				if (CVTFFile::ConvertToRGBA8888(frame, pixels, width, height, vtf.GetFormat())) {
-					return pixbuf;
-				}
-				else {
+				if (!CVTFFile::ConvertToRGBA8888(frame, pixels, width, height, vtf.GetFormat())) {
 					g_object_unref(pixbuf);
+					g_object_unref(animation);
 					g_set_error(
 						error,
 						GDK_PIXBUF_ERROR,
 						GDK_PIXBUF_ERROR_FAILED,
 						"Image data conversion failed");
-					return NULL;
+					return FALSE;
 				}
+
+				gdk_pixbuf_simple_anim_add_frame(animation, pixbuf);
 			}
-			else {
+		}
+		else if (pixbuf_ptr) {
+			pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+
+			if (pixbuf == NULL) {
 				g_set_error(
 					error,
 					GDK_PIXBUF_ERROR,
 					GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY,
-					"Could not allocate pixbuf object");
-				return NULL;
+					"Could not allocate GdkPixbuf object");
+				return FALSE;
+			}
+
+			const vlByte* frame = vtf.GetData(vtf.GetFrameCount() - 1, 0, 0, 0);
+			guchar* pixels = gdk_pixbuf_get_pixels(pixbuf);
+
+			if (!CVTFFile::ConvertToRGBA8888(frame, pixels, width, height, vtf.GetFormat())) {
+				g_object_unref(pixbuf);
+				g_set_error(
+					error,
+					GDK_PIXBUF_ERROR,
+					GDK_PIXBUF_ERROR_FAILED,
+					"Image data conversion failed");
+				return FALSE;
 			}
 		}
-		else {
-			g_set_error(
-				error,
-				GDK_PIXBUF_ERROR,
-				GDK_PIXBUF_ERROR_CORRUPT_IMAGE,
-				LastError.Get());
-			return NULL;
+
+		if (pixbuf_ptr) {
+			*pixbuf_ptr = pixbuf;
 		}
+
+		if (animation_ptr) {
+			*animation_ptr = GDK_PIXBUF_ANIMATION(animation);
+		}
+
+		return TRUE;
+	}
+	catch (std::exception& ex) {
+		if (animation) {
+			g_object_unref(animation);
+		}
+		else if (pixbuf) {
+			g_object_unref(pixbuf);
+		}
+
+		g_set_error(
+			error,
+			GDK_PIXBUF_ERROR,
+			GDK_PIXBUF_ERROR_FAILED,
+			"%s", ex.what());
+		return FALSE;
 	}
 	catch (...) {
+		if (animation) {
+			g_object_unref(animation);
+		}
+		else if (pixbuf) {
+			g_object_unref(pixbuf);
+		}
+
 		g_set_error(
 			error,
 			GDK_PIXBUF_ERROR,
 			GDK_PIXBUF_ERROR_FAILED,
 			"Unhandled C++ exception");
-		return NULL;
+		return FALSE;
 	}
 }
 
@@ -101,43 +184,85 @@ static GdkPixbuf* vtf_image_load(
 	fseeko(fp, 0, SEEK_END);
 	off_t size = ftello(fp);
 
-	if (size >= 0) {
-		fseeko(fp, 0, SEEK_SET);
-		guchar *buffer = (guchar*)g_malloc(size);
-
-		if (buffer != NULL) {
-			if (fread(buffer, size, 1, fp) == 1) {
-				GdkPixbuf* pixbuf = vtf_image_load_memory(buffer, size, error);
-				g_free(buffer);
-				return pixbuf;
-			}
-			else {
-				g_free(buffer);
-				g_set_error(
-					error,
-					GDK_PIXBUF_ERROR,
-					GDK_PIXBUF_ERROR_FAILED,
-					strerror(errno));
-				return NULL;
-			}
-		}
-		else {
-			g_set_error(
-				error,
-				GDK_PIXBUF_ERROR,
-				GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY,
-				"Could not allocate pixbuf object");
-			return NULL;
-		}
-	}
-	else {
+	if (size < 0) {
 		g_set_error(
 			error,
 			GDK_PIXBUF_ERROR,
 			GDK_PIXBUF_ERROR_FAILED,
-			strerror(errno));
+			"%s", strerror(errno));
 		return NULL;
 	}
+
+	fseeko(fp, 0, SEEK_SET);
+	guchar *buffer = (guchar*)g_malloc(size);
+
+	if (buffer == NULL) {
+		g_set_error(
+			error,
+			GDK_PIXBUF_ERROR,
+			GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY,
+			"Could not allocate buffer");
+		return NULL;
+	}
+
+	if (fread(buffer, size, 1, fp) != 1) {
+		g_free(buffer);
+		g_set_error(
+			error,
+			GDK_PIXBUF_ERROR,
+			GDK_PIXBUF_ERROR_FAILED,
+			"%s", strerror(errno));
+		return NULL;
+	}
+
+	GdkPixbuf* pixbuf = NULL;
+	vtf_image_load_from_memory(buffer, size, &pixbuf, NULL, error);
+	g_free(buffer);
+	return pixbuf;
+}
+
+static GdkPixbufAnimation* vtf_image_load_animation(
+	FILE    *fp,
+	GError **error)
+{
+	fseeko(fp, 0, SEEK_END);
+	off_t size = ftello(fp);
+
+	if (size < 0) {
+		g_set_error(
+			error,
+			GDK_PIXBUF_ERROR,
+			GDK_PIXBUF_ERROR_FAILED,
+			"%s", strerror(errno));
+		return NULL;
+	}
+
+	fseeko(fp, 0, SEEK_SET);
+	guchar *buffer = (guchar*)g_malloc(size);
+
+	if (buffer == NULL) {
+		g_set_error(
+			error,
+			GDK_PIXBUF_ERROR,
+			GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY,
+			"Could not allocate buffer");
+		return NULL;
+	}
+
+	if (fread(buffer, size, 1, fp) != 1) {
+		g_free(buffer);
+		g_set_error(
+			error,
+			GDK_PIXBUF_ERROR,
+			GDK_PIXBUF_ERROR_FAILED,
+			"%s", strerror(errno));
+		return NULL;
+	}
+
+	GdkPixbufAnimation* animation = NULL;
+	vtf_image_load_from_memory(buffer, size, NULL, &animation, error);
+	g_free(buffer);
+	return animation;
 }
 
 static gpointer vtf_image_begin_load(
@@ -224,10 +349,11 @@ static gboolean vtf_image_stop_load(
 	GError **error)
 {
 	VtfContext* context = (VtfContext*) context_ptr;
-	GdkPixbuf* pixbuf = vtf_image_load_memory(context->buffer, context->buffer_used, error);
+	GdkPixbuf* pixbuf = NULL;
+	GdkPixbufAnimation* animation = NULL;
 
-	if (pixbuf != NULL) {
-		context->prepared_func(pixbuf, NULL, context->user_data);
+	if (vtf_image_load_from_memory(context->buffer, context->buffer_used, &pixbuf, &animation, error)) {
+		context->prepared_func(pixbuf, animation, context->user_data);
 	}
 
 	g_free(context->buffer);
@@ -241,6 +367,7 @@ extern "C" {
 G_MODULE_EXPORT void fill_vtable(GdkPixbufModule* module)
 {
 	module->load           = vtf_image_load;
+	module->load_animation = vtf_image_load_animation;
 	module->begin_load     = vtf_image_begin_load;
 	module->load_increment = vtf_image_load_increment;
 	module->stop_load      = vtf_image_stop_load;
