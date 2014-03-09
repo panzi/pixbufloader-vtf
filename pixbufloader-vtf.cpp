@@ -50,7 +50,7 @@ static GdkPixbuf* vtf_image_load_memory(
 			GdkPixbuf* pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
 
 	        if (pixbuf != NULL) {
-				const vlByte* frame = vtf.GetData(vtf.GetFrameCount() - 1, 0, 0, vtf.GetMipmapCount() - 1);
+				const vlByte* frame = vtf.GetData(vtf.GetFrameCount() - 1, 0, 0, 0);
 				guchar* pixels = gdk_pixbuf_get_pixels(pixbuf);
 
 				if (CVTFFile::ConvertToRGBA8888(frame, pixels, width, height, vtf.GetFormat())) {
