@@ -22,6 +22,7 @@
 #include <errno.h>
 
 #include <exception>
+#include <sstream>
 
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 #include <gdk-pixbuf/gdk-pixbuf-simple-anim.h>
@@ -57,6 +58,264 @@ static gchar* vtf_extensions[] = {
 	"vtf",
 	NULL
 };
+
+static std::string vtf_flag_names(vlUInt flags) {
+	std::stringstream buf;
+	bool notfirst = false;
+
+    if (flags & TEXTUREFLAGS_POINTSAMPLE) {
+		notfirst = true;
+		buf << "PointSample";
+    }
+    if (flags & TEXTUREFLAGS_TRILINEAR) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Trilinear";
+    }
+    if (flags & TEXTUREFLAGS_CLAMPS) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "ClampS";
+    }
+    if (flags & TEXTUREFLAGS_CLAMPT) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "ClampT";
+    }
+    if (flags & TEXTUREFLAGS_ANISOTROPIC) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Anisotropic";
+    }
+    if (flags & TEXTUREFLAGS_HINT_DXT5) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Hint DXT5";
+    }
+    if (flags & TEXTUREFLAGS_SRGB) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "SRGB";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_NOCOMPRESS) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated NoCompress";
+    }
+    if (flags & TEXTUREFLAGS_NORMAL) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Normal";
+    }
+    if (flags & TEXTUREFLAGS_NOMIP) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "NoMip";
+    }
+    if (flags & TEXTUREFLAGS_NOLOD) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "NoLOD";
+    }
+    if (flags & TEXTUREFLAGS_MINMIP) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "MinMip";
+    }
+    if (flags & TEXTUREFLAGS_PROCEDURAL) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Procedural";
+    }
+    if (flags & TEXTUREFLAGS_ONEBITALPHA) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "OneBitAlpha";
+    }
+    if (flags & TEXTUREFLAGS_EIGHTBITALPHA) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "EightBitAlpha";
+    }
+    if (flags & TEXTUREFLAGS_ENVMAP) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "EnvMap";
+    }
+    if (flags & TEXTUREFLAGS_RENDERTARGET) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "RenderTarget";
+    }
+    if (flags & TEXTUREFLAGS_DEPTHRENDERTARGET) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "DepthRenderTarget";
+    }
+    if (flags & TEXTUREFLAGS_NODEBUGOVERRIDE) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "NoDebugOverride";
+    }
+    if (flags & TEXTUREFLAGS_SINGLECOPY) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "SingleCopy";
+    }
+    if (flags & TEXTUREFLAGS_UNUSED0) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Unused0";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_ONEOVERMIPLEVELINALPHA) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated OneOverMipLevelInAlpha";
+    }
+    if (flags & TEXTUREFLAGS_UNUSED1) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Unused1";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_PREMULTCOLORBYONEOVERMIPLEVEL) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated PremultColorByOneOverMipLevel";
+    }
+    if (flags & TEXTUREFLAGS_UNUSED2) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Unused2";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_NORMALTODUDV) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated NormalTODUDV";
+    }
+    if (flags & TEXTUREFLAGS_UNUSED3) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Unused3";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_ALPHATESTMIPGENERATION) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated AlphaTestMipGeneration";
+    }
+    if (flags & TEXTUREFLAGS_NODEPTHBUFFER) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "NoDepthBuffer";
+    }
+    if (flags & TEXTUREFLAGS_UNUSED4) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Unused4";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_NICEFILTERED) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated NiceFiltered";
+    }
+    if (flags & TEXTUREFLAGS_CLAMPU) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "ClampU";
+    }
+    if (flags & TEXTUREFLAGS_VERTEXTEXTURE) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "VertexTexture";
+    }
+    if (flags & TEXTUREFLAGS_SSBUMP) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "SSBump";
+    }
+    if (flags & TEXTUREFLAGS_UNUSED5) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Unused5";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_UNFILTERABLE_OK) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated Unfilterable Ok";
+    }
+    if (flags & TEXTUREFLAGS_BORDER) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Border";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_SPECVAR_RED) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated SpecVar Red";
+    }
+    if (flags & TEXTUREFLAGS_DEPRECATED_SPECVAR_ALPHA) {
+        if (notfirst) buf << ", ";
+		notfirst = true;
+		buf << "Deprecated SpeCVar Alpha";
+    }
+    if (flags & TEXTUREFLAGS_LAST) {
+        if (notfirst) buf << ", ";
+		buf << "Last";
+    }
+
+    return buf.str();
+}
+
+template<typename number_type>
+static std::string to_str(number_type number) {
+	std::stringstream buf;
+	buf << number;
+	return buf.str();
+}
+
+static void vtf_image_add_options(const CVTFFile &vtf, GdkPixbuf *pixbuf) {
+	SVTFImageFormatInfo formatInfo = VTFLib::CVTFFile::GetImageFormatInfo(vtf.GetFormat());
+	std::stringstream buf;
+	vlSingle rX = 0, rY = 0, rZ = 0;
+
+	vtf.GetReflectivity(rX, rY, rZ);
+
+	buf << vtf.GetMajorVersion() << '.' << vtf.GetMinorVersion();
+	std::string version = buf.str().c_str();
+
+	buf.str(std::string());
+	buf.clear();
+	buf << rX << ", " << rY << ", " << rZ;
+	std::string reflectivity = buf.str();
+
+	gdk_pixbuf_set_option(pixbuf, "Version", version.c_str());
+	gdk_pixbuf_set_option(pixbuf, "Format", formatInfo.lpName);
+	gdk_pixbuf_set_option(pixbuf, "Depth", to_str(vtf.GetDepth()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Bumpmap Scale", to_str(vtf.GetBumpmapScale()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Reflectivity", reflectivity.c_str());
+	gdk_pixbuf_set_option(pixbuf, "Faces", to_str(vtf.GetFaceCount()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Mipmaps", to_str(vtf.GetMipmapCount()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Frames", to_str(vtf.GetFrameCount()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Start Frame", to_str(vtf.GetStartFrame()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Flags", vtf_flag_names(vtf.GetFlags()).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Bits Per Pixel", to_str(formatInfo.uiBitsPerPixel).c_str());
+	gdk_pixbuf_set_option(pixbuf, "Alpha Channel", formatInfo.uiAlphaBitsPerPixel > 0 ? "True" : "False");
+	gdk_pixbuf_set_option(pixbuf, "Compressed", formatInfo.bIsCompressed ? "True" : "False");
+
+	if (vtf.GetHasThumbnail()) {
+		SVTFImageFormatInfo thumbFormatInfo = VTFLib::CVTFFile::GetImageFormatInfo(vtf.GetThumbnailFormat());
+
+		buf.str(std::string());
+		buf.clear();
+
+		buf << vtf.GetThumbnailWidth() << 'x' << vtf.GetThumbnailHeight();
+
+		gdk_pixbuf_set_option(pixbuf, "Thumbnail Format", thumbFormatInfo.lpName);
+		gdk_pixbuf_set_option(pixbuf, "Thumbnail Size", buf.str().c_str());
+		gdk_pixbuf_set_option(pixbuf, "Thumbnail Bits Per Pixel", to_str(thumbFormatInfo.uiBitsPerPixel).c_str());
+		gdk_pixbuf_set_option(pixbuf, "Thumbnail Alpha Channel", thumbFormatInfo.uiAlphaBitsPerPixel > 0 ? "True" : "False");
+		gdk_pixbuf_set_option(pixbuf, "Thumbnail Compressed", thumbFormatInfo.bIsCompressed ? "True" : "False");
+	}
+}
 
 static gboolean vtf_image_load_from_memory(
 	const guchar        *buffer,
@@ -151,6 +410,10 @@ static gboolean vtf_image_load_from_memory(
 					"Image data conversion failed");
 				return FALSE;
 			}
+		}
+
+		if (pixbuf) {
+			vtf_image_add_options(vtf, pixbuf);
 		}
 
 		if (pixbuf_ptr) {
