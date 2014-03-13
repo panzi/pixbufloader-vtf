@@ -2,6 +2,11 @@ pixbufloader-vtf
 ================
 
 GDK PixBuf plugin to load Valve Texture Files (read-only).
+Using this you will be able to view VTF files in Gtk+ programs like Eye of GNOME.
+
+For a general read-only integration into Qt applications (e.g. view VTF files in
+Gwenview) see [qvtf](https://github.com/panzi/qvtf) and in order to view thumbnails
+in KDE programs like Dolphin see [KIO Thumbnail VTF Plugin](https://github.com/panzi/KIO-VTF-Thumb-Creator).
 
 ### Setup
 
